@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WolfTill — Money &amp; Receipts Tracker</title>
+<style>
+:root{
+  --green:#1e5631; --green-d:#123c21; --green-l:#e3efe0;
+  --cream:#faf5e9; --bg:#f4efe0; --card:#fffdf6;
+  --ink:#23301f; --mut:#5f6f5a; --line:#e3d9bd;
+  --amber:#e8a13a; --amber-d:#c07f1d; --amber-l:#fdf3e0; --red:#b3372f; --red-l:#fbeae8;
+  --radius:16px;
+  --shadow:0 2px 6px rgba(35,48,31,.07),0 10px 26px rgba(35,48,31,.07);
+  --bar-h:64px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15.5px;line-height:1.5;padding-bottom:calc(var(--bar-h) + env(safe-area-inset-bottom) + 20px)}
+header{position:sticky;top:0;z-index:30;background:linear-gradient(135deg,var(--green-d),var(--green) 62%,#2a6e40);color:var(--cream);padding:12px 14px;box-shadow:0 2px 12px rgba(18,60,33,.35)}
+header .wrap{max-width:1020px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.mark{flex:0 0 auto;width:50px;height:50px;border-radius:15px;background:linear-gradient(145deg,var(--amber),var(--amber-d));display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 3px 8px rgba(0,0,0,.25)}
+h1{margin:0;font-size:26px;letter-spacing:.2px;line-height:1.1}
+.sub{opacity:.93;font-size:13px;margin-top:1px}
+.seller{font-size:12px;opacity:.85}
+select,input,textarea,button{font:inherit}
+select,input[type=text],input[type=number],input[type=date],textarea{padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);max-width:100%;width:100%}
+button{cursor:pointer;border:1px solid var(--green);background:var(--green);color:#fff;padding:11px 18px;border-radius:999px;font-weight:600;min-height:48px;transition:background .15s,transform .1s}
+button:active{transform:scale(.98)}
+button:hover{background:var(--green-d)}
+button.ghost{background:#fff;color:var(--green)}
+button.ghost:hover{background:var(--amber-l)}
+button.danger{background:#fff;color:var(--red);border-color:var(--red)}
+button.danger:hover{background:var(--red-l)}
+button:disabled{opacity:.5;cursor:not-allowed}
+nav{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:60;background:rgba(255,253,246,.97);border-top:1px solid var(--line);box-shadow:0 -3px 16px rgba(35,48,31,.12);padding-bottom:env(safe-area-inset-bottom)}
+nav .wrap{max-width:640px;margin:0 auto;display:flex;gap:2px;padding:6px 8px}
+nav button{flex:1;background:none;border:none;color:var(--mut);padding:4px 2px 5px;border-radius:14px;font-weight:700;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+nav button:hover{background:rgba(30,86,49,.06)}
+nav button .ic{font-size:21px;line-height:1.15;padding:3px 14px;border-radius:999px;transition:background .15s}
+nav button .lb{font-size:11.5px;letter-spacing:.2px}
+nav button.active{color:var(--green-d)}
+nav button.active .ic{background:var(--amber);box-shadow:0 2px 6px rgba(232,161,58,.5)}
+main{max-width:1020px;margin:0 auto;padding:16px 12px 8px}
+.tab{display:none}
+.tab.active{display:block;animation:tabIn .28s ease both}
+@keyframes tabIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 8px;font-size:19px}
+.card h3{margin:0 0 6px;font-size:16.5px}
+.honest{background:var(--amber-l);border:1px solid var(--amber);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;font-size:14.5px}
+.msg{font-size:14.5px;margin:9px 0}
+.err{background:var(--red-l);border:1px solid var(--red);border-radius:14px;padding:12px 14px;font-size:14.5px;margin-bottom:14px}
+.meta{font-size:13px;color:var(--mut)}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.stat{flex:1 1 100px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 10px;text-align:center}
+.stat .n{font-size:24px;font-weight:800;color:var(--green-d)}
+.stat .n.neg{color:var(--red)}
+.stat .l{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+.field{margin-bottom:12px}
+.field label{display:block;font-weight:700;margin-bottom:5px}
+.withmic{display:flex;gap:8px;align-items:flex-start}
+.withmic textarea,.withmic input{flex:1}
+.micbtn{flex:0 0 52px;width:52px;height:52px;padding:0;font-size:21px;border-radius:50%;background:#fff;color:var(--green)}
+.micbtn:hover{background:var(--amber-l)}
+.micbtn.listening{background:var(--red);border-color:var(--red);color:#fff}
+.entry{border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:10px;background:#fff}
+.entry .ename{font-weight:800;font-size:16px}
+.entry .amt{float:right;font-weight:800;font-size:16px}
+.entry .amt.in{color:var(--green)}
+.entry .amt.out{color:var(--red)}
+.entry .when{font-size:13px;color:var(--mut)}
+.entry .notes{font-size:14px;margin-top:4px;white-space:pre-wrap;word-break:break-word}
+.tag{display:inline-block;border-radius:14px;padding:1px 9px;font-size:12px;font-weight:700;background:var(--green-l);color:var(--green-d);margin-right:5px}
+.tag.amber{background:var(--amber-l);color:var(--amber-d)}
+.entry .actions{display:flex;gap:8px;margin-top:9px}
+.entry .actions button{min-height:44px;padding:6px 14px;font-size:14px}
+.formerr{color:var(--red);font-weight:700;font-size:14.5px;min-height:20px;margin:4px 0}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btnrow button{flex:1 1 auto}
+table.tot{width:100%;border-collapse:collapse;font-size:14.5px}
+table.tot th,table.tot td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right}
+table.tot th:first-child,table.tot td:first-child{text-align:left}
+table.tot tr.totrow td{font-weight:800;border-top:2px solid var(--green);border-bottom:none}
+.tablewrap{overflow-x:auto}
+.help h3{margin-top:16px}
+.help h3:first-child{margin-top:0}
+#toast{position:fixed;left:50%;bottom:calc(var(--bar-h) + env(safe-area-inset-bottom) + 16px);transform:translateX(-50%);background:var(--green-d);color:#fff;padding:11px 18px;border-radius:999px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:90;max-width:92vw;text-align:center}
+#toast.show{opacity:1}
+#gate{position:fixed;inset:0;background:rgba(18,40,25,.72);z-index:100;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:18px 12px}
+#gate .gcard{background:var(--card);border-radius:22px;max-width:560px;width:100%;padding:26px 20px 22px;margin:auto;box-shadow:0 18px 44px rgba(0,0,0,.35)}
+.gicon{font-size:66px;text-align:center;line-height:1.1}
+.gname{text-align:center;font-size:27px;font-weight:800;margin:2px 0;color:var(--green-d)}
+.gwelcome{text-align:center;color:var(--mut);margin:0 0 6px;font-size:15px}
+#gate .terms{font-size:13.5px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 13px;max-height:240px;overflow-y:auto;margin-bottom:12px}
+#gate label{display:flex;gap:10px;align-items:flex-start;font-weight:600;margin-bottom:13px;cursor:pointer}
+#gate label input{width:22px;height:22px;flex:0 0 auto;margin-top:1px}
+#gateAgree{width:100%;min-height:56px;font-size:17.5px;border-radius:999px}
+.foot{font-size:12.5px;color:var(--mut);text-align:center;margin-top:18px}
+a.mailbtn{display:inline-block;background:var(--green);color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;min-height:48px}
+[hidden]{display:none !important}
+@media print{
+  nav,header,#gate,#toast,.entry .actions,.noPrint{display:none !important}
+  body{padding-bottom:0;background:#fff}
+  .tab{display:none !important}
+  .tab.active{display:block !important}
+  .card,.entry,.stat{box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<div id="gate" hidden>
+  <div class="gcard">
+    <div class="gicon">🐺</div>
+    <div class="gname">WolfTill</div>
+    <p class="gwelcome">Welcome! WolfTill keeps your business money in one place — income, expenses, and receipts — right on this device. Send Muse a receipt photo in chat and the expense lands here by itself. Before you start, here are the short terms:</p>
+    <div class="terms">
+      <p><strong>Terms of Use — WolfTill v1.0.0</strong></p>
+      <p>1. WolfTill is a record-keeping helper for your own business income, expenses, and receipt references. It is not a bank, an accountant, or tax advice. Check your numbers before you file taxes or make business decisions — you are responsible for your own books.</p>
+      <p>2. Your entries are saved only in this browser, on this device. WolfTill collects no personal information and sends nothing anywhere. Receipt photos you send to Muse in chat are filed by Muse; the app itself only stores the receipt reference text you (or Muse, through the inbox) put on an entry.</p>
+      <p>3. Keep your own backup: use the CSV export buttons on the Totals tab. If you clear your browser data, entries stored only in this browser go with it.</p>
+      <p>4. The app is provided as-is. If something doesn't work, contact us through the Help tab and we'll fix or replace the file.</p>
+      <p>5. These terms are governed by the laws of the State of Oklahoma, USA.</p>
+    </div>
+    <label><input type="checkbox" id="gateCheck"> <span>I have read and I agree to the Terms of Use</span></label>
+    <button type="button" id="gateAgree" disabled>I Agree — Start Tracking</button>
+    <p class="meta" style="text-align:center;margin-top:10px">White Wolf Apps</p>
+  </div>
+</div>
+
+<header>
+  <div class="wrap">
+    <div class="mark">🐺</div>
+    <div>
+      <h1>WolfTill</h1>
+      <div class="sub">Money in. Money out. Receipts filed.</div>
+      <div class="seller">by White Wolf Apps</div>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <div class="wrap" id="tabBar">
+    <button type="button" data-tab="home" class="active"><span class="ic">🏠</span><span class="lb">Home</span></button>
+    <button type="button" data-tab="expenses"><span class="ic">💸</span><span class="lb">Expenses</span></button>
+    <button type="button" data-tab="income"><span class="ic">💰</span><span class="lb">Income</span></button>
+    <button type="button" data-tab="totals"><span class="ic">📊</span><span class="lb">Totals</span></button>
+    <button type="button" data-tab="help"><span class="ic">❓</span><span class="lb">Help</span></button>
+  </div>
+</nav>
+
+<main>
+  <!-- HOME -->
+  <section id="tab-home" class="tab active">
+    <div id="corruptNote" class="err" hidden>Your saved WolfTill data couldn't be read (the stored copy was damaged), so we started fresh. The damaged copy was kept aside in this browser under a backup key, and nothing else in the app was affected.</div>
+    <h2 style="margin:2px 0 10px" id="homeMonthTitle">This month</h2>
+    <div class="stats">
+      <div class="stat"><div class="n" id="homeIncome">$0.00</div><div class="l">Income in</div></div>
+      <div class="stat"><div class="n" id="homeExpenses">$0.00</div><div class="l">Expenses out</div></div>
+      <div class="stat"><div class="n" id="homeNet">$0.00</div><div class="l">Net</div></div>
+    </div>
+    <div class="card">
+      <h3>Year so far</h3>
+      <p class="msg" id="homeYearLine" style="margin:0">—</p>
+      <p class="meta" id="inboxStatus" style="margin-bottom:0">Receipt inbox: checking…</p>
+    </div>
+    <div class="card noPrint">
+      <h3>Add something</h3>
+      <div class="btnrow">
+        <button type="button" id="homeAddExpense">＋ Add an expense</button>
+        <button type="button" id="homeAddIncome" class="ghost">＋ Add income</button>
+      </div>
+      <p class="meta" style="margin-bottom:0">Or just send Muse a receipt photo in chat — it lands here automatically.</p>
+    </div>
+    <h3 style="margin:14px 0 8px">Recent entries</h3>
+    <div id="homeRecent"></div>
+  </section>
+
+  <!-- EXPENSES -->
+  <section id="tab-expenses" class="tab">
+    <div class="stats">
+      <div class="stat"><div class="n" id="expTotalAll">$0.00</div><div class="l">Total expenses</div></div>
+      <div class="stat"><div class="n" id="expCount">0</div><div class="l">Entries</div></div>
+    </div>
+    <div class="card">
+      <h2 id="expFormTitle">Add an expense</h2>
+      <form id="expForm" novalidate>
+        <div class="field">
+          <label for="expDate">Date</label>
+          <input type="date" id="expDate">
+        </div>
+        <div class="field">
+          <label for="expVendor">Vendor — who did you pay?</label>
+          <div class="withmic">
+            <input type="text" id="expVendor" placeholder="e.g. Walmart - Grove" autocomplete="off">
+            <button type="button" class="micbtn" data-mic="expVendor" aria-label="Dictate vendor">🎤</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="expAmount">Amount ($)</label>
+          <div class="withmic">
+            <input type="number" id="expAmount" inputmode="decimal" step="0.01" min="0" placeholder="0.00">
+            <button type="button" class="micbtn" data-mic="expAmount" aria-label="Dictate amount">🎤</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="expCategory">Category</label>
+          <select id="expCategory"></select>
+        </div>
+        <div class="field">
+          <label for="expNotes">Notes</label>
+          <div class="withmic">
+            <textarea id="expNotes" rows="3" placeholder="What was it for? How did you pay?"></textarea>
+            <button type="button" class="micbtn" data-mic="expNotes" aria-label="Dictate notes">🎤</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="expReceipt">Receipt photo reference</label>
+          <div class="withmic">
+            <input type="text" id="expReceipt" placeholder="e.g. 2026-11-13-walmart-oil.jpg" autocomplete="off">
+            <button type="button" class="micbtn" data-mic="expReceipt" aria-label="Dictate receipt reference">🎤</button>
+          </div>
+        </div>
+        <div class="formerr" id="expErr"></div>
+        <div class="btnrow">
+          <button type="submit" id="expSubmit">Save expense</button>
+          <button type="button" id="expCancelEdit" class="ghost" hidden>Cancel edit</button>
+        </div>
+      </form>
+    </div>
+    <div id="expList"></div>
+  </section>
+
+  <!-- INCOME -->
+  <section id="tab-income" class="tab">
+    <div class="stats">
+      <div class="stat"><div class="n" id="incTotalAll">$0.00</div><div class="l">Income received</div></div>
+      <div class="stat"><div class="n" id="incPendingAll">$0.00</div><div class="l">Pending</div></div>
+      <div class="stat"><div class="n" id="incCount">0</div><div class="l">Entries</div></div>
+    </div>
+    <div class="card">
+      <h2 id="incFormTitle">Add income</h2>
+      <form id="incForm" novalidate>
+        <div class="field">
+          <label for="incDate">Date</label>
+          <input type="date" id="incDate">
+        </div>
+        <div class="field">
+          <label for="incPayer">Payer — who paid you?</label>
+          <div class="withmic">
+            <input type="text" id="incPayer" placeholder="e.g. Jeff Karriman Sr." autocomplete="off">
+            <button type="button" class="micbtn" data-mic="incPayer" aria-label="Dictate payer">🎤</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="incDesc">Description — what was it for?</label>
+          <div class="withmic">
+            <input type="text" id="incDesc" placeholder="e.g. Tree service job" autocomplete="off">
+            <button type="button" class="micbtn" data-mic="incDesc" aria-label="Dictate description">🎤</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="incAmount">Amount ($)</label>
+          <div class="withmic">
+            <input type="number" id="incAmount" inputmode="decimal" step="0.01" min="0" placeholder="0.00">
+            <button type="button" class="micbtn" data-mic="incAmount" aria-label="Dictate amount">🎤</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="incCategory">Category</label>
+          <select id="incCategory">
+            <option>Services</option>
+            <option>Product sales</option>
+            <option>Uncategorized</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="incMethod">Payment method</label>
+          <div class="withmic">
+            <input type="text" id="incMethod" placeholder="e.g. Wave, cash, check" autocomplete="off">
+            <button type="button" class="micbtn" data-mic="incMethod" aria-label="Dictate payment method">🎤</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="incStatus">Status</label>
+          <select id="incStatus">
+            <option>Received</option>
+            <option>Pending</option>
+            <option>Refunded</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="incNotes">Notes</label>
+          <div class="withmic">
+            <textarea id="incNotes" rows="3" placeholder="Anything worth remembering about this payment?"></textarea>
+            <button type="button" class="micbtn" data-mic="incNotes" aria-label="Dictate notes">🎤</button>
+          </div>
+        </div>
+        <div class="formerr" id="incErr"></div>
+        <div class="btnrow">
+          <button type="submit" id="incSubmit">Save income</button>
+          <button type="button" id="incCancelEdit" class="ghost" hidden>Cancel edit</button>
+        </div>
+      </form>
+    </div>
+    <div id="incList"></div>
+  </section>
+
+  <!-- TOTALS -->
+  <section id="tab-totals" class="tab">
+    <div class="card">
+      <h2>Totals by tax year</h2>
+      <div class="field" style="margin-bottom:6px">
+        <label for="totYear">Tax year</label>
+        <select id="totYear"></select>
+      </div>
+      <div class="stats" style="margin-top:10px">
+        <div class="stat"><div class="n" id="totIncome">$0.00</div><div class="l">Income received</div></div>
+        <div class="stat"><div class="n" id="totExpenses">$0.00</div><div class="l">Expenses</div></div>
+        <div class="stat"><div class="n" id="totNet">$0.00</div><div class="l">Net</div></div>
+      </div>
+      <p class="meta" id="totPendingLine" style="margin-bottom:0"></p>
+    </div>
+    <div class="card">
+      <h3>By month</h3>
+      <div class="tablewrap"><table class="tot" id="totMonths"></table></div>
+    </div>
+    <div class="card">
+      <h3>Expenses by category</h3>
+      <div class="tablewrap"><table class="tot" id="totExpCats"></table></div>
+    </div>
+    <div class="card">
+      <h3>Income by category</h3>
+      <div class="tablewrap"><table class="tot" id="totIncCats"></table></div>
+    </div>
+    <div class="card noPrint">
+      <h3>Back up your books</h3>
+      <p class="msg">Download a spreadsheet-ready CSV of either list. Keep a copy someplace safe — your entries live only in this browser.</p>
+      <div class="btnrow">
+        <button type="button" id="exportExp">⬇ Export expenses CSV</button>
+        <button type="button" id="exportInc" class="ghost">⬇ Export income CSV</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HELP -->
+  <section id="tab-help" class="tab">
+    <div class="card help">
+      <h2>Help — how WolfTill works</h2>
+      <h3>📸 The easy way: send Muse the receipt</h3>
+      <p>Send Muse a photo of a receipt in chat and say it's for the business. Muse reads the store, date, and total, files the expense for you, and it shows up here on its own the next time you open WolfTill — no typing, no tapping an import button. The same goes for money that comes in: tell Muse who paid you and it lands in the Income list.</p>
+      <h3>🏠 Home</h3>
+      <p>The Home tab shows this month's money in, money out, and what's left (your net), the year so far, and your most recent entries.</p>
+      <h3>💸 Adding an expense by hand</h3>
+      <p>On the Expenses tab, fill in the date, who you paid, the amount, and a category, then tap Save expense. Notes and a receipt photo reference are optional but help at tax time. Tap the 🎤 mic beside a field and talk instead of typing — one tap and it's listening.</p>
+      <h3>💰 Adding income by hand</h3>
+      <p>On the Income tab, record who paid you, what for, and how much. Mark it Received when the money is actually in hand, Pending while you're still waiting on it. Only Received income counts in your net.</p>
+      <h3>✏️ Fixing or removing an entry</h3>
+      <p>Every entry has Edit and Delete buttons. Edit opens the entry in the form at the top of its tab — change anything and save. Delete asks once to be sure. If you delete an entry that arrived from Muse's inbox, it stays deleted — it won't come back.</p>
+      <h3>📊 Totals &amp; taxes</h3>
+      <p>The Totals tab breaks a tax year down by month and by category — income received, expenses, and net. Use the CSV export buttons there to hand your books to a spreadsheet or your tax preparer. WolfTill keeps records; it is not tax advice.</p>
+      <h3>🔒 Where your data lives</h3>
+      <p>Your entries live only in this browser, on this device. WolfTill collects nothing and sends nothing anywhere. Back up with the CSV exports — if you clear your browser data, entries stored only here go with it.</p>
+      <h3>✉️ Still stuck?</h3>
+      <p>Email us and tell us what you were trying to do and what happened:</p>
+      <p><a class="mailbtn" id="helpMail" href="mailto:whitewolfbackoffice@gmail.com?subject=%5BWolfTill%5D%20help%20%E2%80%94%20v1.0.0&amp;body=Tell%20us%20what%20you%20were%20trying%20to%20do%20and%20what%20happened%3A%0A%0A">Email us — whitewolfbackoffice@gmail.com</a></p>
+      <p class="meta">WolfTill v1.0.0 · White Wolf Apps · Your copy is fully unlocked — every feature, no paywall for the owner.</p>
+    </div>
+  </section>
+
+  <p class="foot">WolfTill v1.0.0 — by White Wolf Apps · Questions: whitewolfbackoffice@gmail.com</p>
+</main>
+
+<div id="toast"></div>
+<script>
+"use strict";
+/* ================= WolfTill v1.0.0 =================
+   Single source of truth: state.expenses[] and state.income[].
+   Every view (Home, lists, Totals, exports) is computed from those
+   two arrays at render time — no per-tab copies (§10).
+   ZERO-TAP INBOX: money/inbox.json (next to the app in the
+   wolftill-share repo) is fetched on open and whenever the app
+   becomes visible again. Entries whose id is not already present
+   and not tombstoned are appended automatically — no tap, no
+   import button. Imported entries keep their inbox id; local
+   edits to them are never overwritten because an id that is
+   already present is always skipped. Deleting an imported entry
+   tombstones its id so it never re-imports. Any inbox fetch or
+   parse failure is silent. */
+var VERSION = "1.0.0";
+var LS_STATE = "wolftill_v1";
+var LS_AGREED = "wolftill_agreed_v1";
+var LS_IMPORTED = "wolftill_imported_v1";
+var LS_TOMBSTONES = "wolftill_tombstones_v1";
+var LS_CORRUPT = "wolftill_corrupt_backup_v1";
+var TERMS_VERSION = "wolftill-terms-1.0.0";
+var EXP_CATEGORIES = ["Fuel","Equipment & Supplies","Repairs & Maintenance","Insurance","Fees & Licenses","Materials","Subcontractors","Office","Uncategorized","Other"];
+var MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+var state = { expenses: [], income: [] };
+var editingExpenseId = null;
+var editingIncomeId = null;
+var lastSubmit = { exp: { sig: "", at: 0 }, inc: { sig: "", at: 0 } };
+
+function $(id){ return document.getElementById(id); }
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+    return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+  });
+}
+function money(n){
+  var v = Math.round((Number(n) || 0) * 100) / 100;
+  var neg = v < 0;
+  var parts = Math.abs(v).toFixed(2).split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return (neg ? "-$" : "$") + parts[0] + "." + parts[1];
+}
+function round2(n){ return Math.round((Number(n) || 0) * 100) / 100; }
+function uid(prefix){
+  return prefix + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 9);
+}
+function todayStr(){
+  var d = new Date();
+  var m = String(d.getMonth() + 1); if (m.length < 2) m = "0" + m;
+  var day = String(d.getDate()); if (day.length < 2) day = "0" + day;
+  return d.getFullYear() + "-" + m + "-" + day;
+}
+function validDateStr(s){
+  if (typeof s !== "string") return false;
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return false;
+  var y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return false;
+  /* Round-trip through a real Date so impossible dates (Feb 30, Feb 29 in a
+     non-leap year) are rejected instead of silently rolling into the next month. */
+  var dt = new Date(y, mo - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === d;
+}
+function prettyDate(s){
+  if (!validDateStr(s)) return esc(s || "");
+  var p = s.split("-");
+  return MONTH_NAMES[Number(p[1]) - 1].slice(0, 3) + " " + Number(p[2]) + ", " + p[0];
+}
+var toastTimer = null;
+function toast(msg){
+  var t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2600);
+}
+
+/* ---------- storage ---------- */
+function readIdList(key){
+  try {
+    var v = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(v) ? v.filter(function(x){ return typeof x === "string"; }) : [];
+  } catch (e) { return []; }
+}
+function writeIdList(key, arr){
+  try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) {}
+}
+function sanitizeExpense(raw){
+  if (!raw || typeof raw !== "object") return null;
+  if (typeof raw.id !== "string" || !raw.id) return null;
+  if (!validDateStr(raw.date)) return null;
+  var amt = Number(raw.amount);
+  if (!isFinite(amt)) return null;
+  return {
+    id: raw.id,
+    date: raw.date,
+    vendor: String(raw.vendor == null ? "" : raw.vendor),
+    amount: round2(amt),
+    category: String(raw.category || "Other"),
+    notes: String(raw.notes == null ? "" : raw.notes),
+    receiptRef: String(raw.receiptRef == null ? "" : raw.receiptRef),
+    source: raw.source === "inbox" ? "inbox" : "local"
+  };
+}
+function sanitizeIncome(raw){
+  if (!raw || typeof raw !== "object") return null;
+  if (typeof raw.id !== "string" || !raw.id) return null;
+  if (!validDateStr(raw.date)) return null;
+  var amt = Number(raw.amount);
+  if (!isFinite(amt)) return null;
+  var st = String(raw.status || "Received");
+  if (["Received","Pending","Refunded"].indexOf(st) < 0) st = "Received";
+  return {
+    id: raw.id,
+    date: raw.date,
+    payer: String(raw.payer == null ? "" : raw.payer),
+    description: String(raw.description == null ? "" : raw.description),
+    amount: round2(amt),
+    category: String(raw.category || "Services"),
+    paymentMethod: String(raw.paymentMethod == null ? "" : raw.paymentMethod),
+    status: st,
+    notes: String(raw.notes == null ? "" : raw.notes),
+    source: raw.source === "inbox" ? "inbox" : "local"
+  };
+}
+function loadState(){
+  var rawText = null;
+  try { rawText = localStorage.getItem(LS_STATE); } catch (e) {}
+  if (!rawText) { state = { expenses: [], income: [] }; return; }
+  try {
+    var parsed = JSON.parse(rawText);
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.expenses) || !Array.isArray(parsed.income)) throw new Error("bad shape");
+    state = {
+      expenses: parsed.expenses.map(sanitizeExpense).filter(Boolean),
+      income: parsed.income.map(sanitizeIncome).filter(Boolean)
+    };
+  } catch (e) {
+    /* Corruption drill: keep the damaged copy aside, start fresh, say so. */
+    try { localStorage.setItem(LS_CORRUPT, rawText); } catch (e2) {}
+    state = { expenses: [], income: [] };
+    /* Persist the recovered state so the next load doesn't trip over the same damaged copy. */
+    try { localStorage.setItem(LS_STATE, JSON.stringify(state)); } catch (e3) {}
+    var note = $("corruptNote");
+    if (note) note.hidden = false;
+  }
+}
+var saveNoteExternal = false;
+function saveState(){
+  try { localStorage.setItem(LS_STATE, JSON.stringify(state)); } catch (e) {}
+}
+
+/* ---------- tabs ---------- */
+function showTab(name){
+  var tabs = document.querySelectorAll(".tab");
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle("active", tabs[i].id === "tab-" + name);
+  var btns = document.querySelectorAll("#tabBar button");
+  for (var j = 0; j < btns.length; j++) btns[j].classList.toggle("active", btns[j].getAttribute("data-tab") === name);
+  window.scrollTo(0, 0);
+}
+
+/* ---------- computations (always from state, §10) ---------- */
+function sumAmounts(list){ return round2(list.reduce(function(a, e){ return a + (Number(e.amount) || 0); }, 0)); }
+function monthKey(dateStr){ return String(dateStr || "").slice(0, 7); }
+function thisMonthExpenses(){
+  var mk = monthKey(todayStr());
+  return state.expenses.filter(function(e){ return monthKey(e.date) === mk; });
+}
+function thisMonthIncomeReceived(){
+  var mk = monthKey(todayStr());
+  return state.income.filter(function(e){ return monthKey(e.date) === mk && e.status === "Received"; });
+}
+function yearIncomeReceived(year){
+  return state.income.filter(function(e){ return e.date.slice(0, 4) === year && e.status === "Received"; });
+}
+function yearExpenses(year){
+  return state.expenses.filter(function(e){ return e.date.slice(0, 4) === year; });
+}
+function byDateDesc(a, b){ return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); }
+
+/* ---------- rendering ---------- */
+function expenseEntryHTML(e){
+  var h = '<div class="entry"><span class="amt out">-' + esc(money(e.amount)) + '</span>' +
+    '<div class="ename">' + esc(e.vendor || "(no vendor)") + '</div>' +
+    '<div class="when">' + esc(prettyDate(e.date)) + '</div>' +
+    '<div style="margin-top:4px"><span class="tag">' + esc(e.category) + '</span>' +
+    (e.source === "inbox" ? '<span class="tag amber">from Muse</span>' : '') + '</div>';
+  if (e.notes) h += '<div class="notes">' + esc(e.notes) + '</div>';
+  if (e.receiptRef) h += '<div class="meta">🧾 Receipt: ' + esc(e.receiptRef) + '</div>';
+  h += '<div class="actions"><button type="button" class="ghost" data-edit-exp="' + esc(e.id) + '">Edit</button>' +
+    '<button type="button" class="danger" data-del-exp="' + esc(e.id) + '">Delete</button></div></div>';
+  return h;
+}
+function incomeEntryHTML(e){
+  var h = '<div class="entry"><span class="amt in">+' + esc(money(e.amount)) + '</span>' +
+    '<div class="ename">' + esc(e.payer || "(no payer)") + '</div>' +
+    '<div class="when">' + esc(prettyDate(e.date)) + (e.description ? ' · ' + esc(e.description) : '') + '</div>' +
+    '<div style="margin-top:4px"><span class="tag">' + esc(e.category) + '</span>' +
+    '<span class="tag' + (e.status === "Received" ? '' : ' amber') + '">' + esc(e.status) + '</span>' +
+    (e.source === "inbox" ? '<span class="tag amber">from Muse</span>' : '') + '</div>';
+  if (e.paymentMethod) h += '<div class="meta">Paid by: ' + esc(e.paymentMethod) + '</div>';
+  if (e.notes) h += '<div class="notes">' + esc(e.notes) + '</div>';
+  h += '<div class="actions"><button type="button" class="ghost" data-edit-inc="' + esc(e.id) + '">Edit</button>' +
+    '<button type="button" class="danger" data-del-inc="' + esc(e.id) + '">Delete</button></div></div>';
+  return h;
+}
+function renderHome(){
+  var d = new Date();
+  $("homeMonthTitle").textContent = MONTH_NAMES[d.getMonth()] + " " + d.getFullYear() + " — this month";
+  var inc = sumAmounts(thisMonthIncomeReceived());
+  var exp = sumAmounts(thisMonthExpenses());
+  $("homeIncome").textContent = money(inc);
+  $("homeExpenses").textContent = money(exp);
+  var netEl = $("homeNet");
+  netEl.textContent = money(inc - exp);
+  netEl.classList.toggle("neg", (inc - exp) < 0);
+  var yr = String(d.getFullYear());
+  var yInc = sumAmounts(yearIncomeReceived(yr));
+  var yExp = sumAmounts(yearExpenses(yr));
+  $("homeYearLine").textContent = yr + " so far: " + money(yInc) + " in · " + money(yExp) + " out · net " + money(yInc - yExp) + ".";
+  var combined = state.expenses.map(function(e){ return { kind: "exp", e: e }; })
+    .concat(state.income.map(function(e){ return { kind: "inc", e: e }; }));
+  combined.sort(function(a, b){ return byDateDesc(a.e, b.e); });
+  var recent = combined.slice(0, 8);
+  $("homeRecent").innerHTML = recent.length
+    ? recent.map(function(x){ return x.kind === "exp" ? expenseEntryHTML(x.e) : incomeEntryHTML(x.e); }).join("")
+    : '<div class="card"><p class="msg" style="margin:0">Nothing here yet. Add an expense or income entry, or send Muse a receipt photo in chat and it will land here on its own.</p></div>';
+}
+function renderExpenses(){
+  var list = state.expenses.slice().sort(byDateDesc);
+  $("expTotalAll").textContent = money(sumAmounts(state.expenses));
+  $("expCount").textContent = String(state.expenses.length);
+  $("expList").innerHTML = list.length
+    ? list.map(expenseEntryHTML).join("")
+    : '<div class="card"><p class="msg" style="margin:0">No expenses yet.</p></div>';
+}
+function renderIncome(){
+  var received = state.income.filter(function(e){ return e.status === "Received"; });
+  var pending = state.income.filter(function(e){ return e.status === "Pending"; });
+  $("incTotalAll").textContent = money(sumAmounts(received));
+  $("incPendingAll").textContent = money(sumAmounts(pending));
+  $("incCount").textContent = String(state.income.length);
+  var list = state.income.slice().sort(byDateDesc);
+  $("incList").innerHTML = list.length
+    ? list.map(incomeEntryHTML).join("")
+    : '<div class="card"><p class="msg" style="margin:0">No income yet.</p></div>';
+}
+function fillYearSelect(){
+  var sel = $("totYear");
+  var years = {};
+  state.expenses.forEach(function(e){ years[e.date.slice(0, 4)] = true; });
+  state.income.forEach(function(e){ years[e.date.slice(0, 4)] = true; });
+  years[String(new Date().getFullYear())] = true;
+  var list = Object.keys(years).sort().reverse();
+  var keep = sel.value;
+  sel.innerHTML = list.map(function(y){ return '<option value="' + esc(y) + '">' + esc(y) + '</option>'; }).join("");
+  if (keep && years[keep]) sel.value = keep;
+}
+function groupBy(list, keyFn){
+  var out = {};
+  list.forEach(function(e){ var k = keyFn(e); out[k] = round2((out[k] || 0) + (Number(e.amount) || 0)); });
+  return out;
+}
+function renderTotals(){
+  fillYearSelect();
+  var year = $("totYear").value || String(new Date().getFullYear());
+  var incList = yearIncomeReceived(year);
+  var expList = yearExpenses(year);
+  var inc = sumAmounts(incList);
+  var exp = sumAmounts(expList);
+  $("totIncome").textContent = money(inc);
+  $("totExpenses").textContent = money(exp);
+  var netEl = $("totNet");
+  netEl.textContent = money(inc - exp);
+  netEl.classList.toggle("neg", (inc - exp) < 0);
+  var pending = sumAmounts(state.income.filter(function(e){ return e.date.slice(0, 4) === year && e.status === "Pending"; }));
+  var refunded = sumAmounts(state.income.filter(function(e){ return e.date.slice(0, 4) === year && e.status === "Refunded"; }));
+  $("totPendingLine").textContent = "Also in " + year + ": " + money(pending) + " pending (not counted in income or net) · " + money(refunded) + " refunded (not counted).";
+  var incByMonth = groupBy(incList, function(e){ return e.date.slice(5, 7); });
+  var expByMonth = groupBy(expList, function(e){ return e.date.slice(5, 7); });
+  var rows = '<tr><th>Month</th><th>Income</th><th>Expenses</th><th>Net</th></tr>';
+  for (var m = 1; m <= 12; m++) {
+    var k = (m < 10 ? "0" : "") + m;
+    var mi = incByMonth[k] || 0, me = expByMonth[k] || 0;
+    rows += '<tr><td>' + MONTH_NAMES[m - 1] + '</td><td>' + esc(money(mi)) + '</td><td>' + esc(money(me)) + '</td><td>' + esc(money(mi - me)) + '</td></tr>';
+  }
+  rows += '<tr class="totrow"><td>Year</td><td>' + esc(money(inc)) + '</td><td>' + esc(money(exp)) + '</td><td>' + esc(money(inc - exp)) + '</td></tr>';
+  $("totMonths").innerHTML = rows;
+  function catTable(el, grouped, total){
+    var keys = Object.keys(grouped).sort(function(a, b){ return grouped[b] - grouped[a]; });
+    if (!keys.length) { el.innerHTML = '<tr><td class="meta">Nothing this year.</td></tr>'; return; }
+    el.innerHTML = keys.map(function(k){
+      return '<tr><td>' + esc(k) + '</td><td>' + esc(money(grouped[k])) + '</td></tr>';
+    }).join("") + '<tr class="totrow"><td>Total</td><td>' + esc(money(total)) + '</td></tr>';
+  }
+  catTable($("totExpCats"), groupBy(expList, function(e){ return e.category || "Other"; }), exp);
+  catTable($("totIncCats"), groupBy(incList, function(e){ return e.category || "Services"; }), inc);
+}
+function renderAll(){
+  renderHome();
+  renderExpenses();
+  renderIncome();
+  renderTotals();
+}
+
+/* ---------- forms: expenses ---------- */
+function fillCategorySelect(){
+  $("expCategory").innerHTML = EXP_CATEGORIES.map(function(c){ return '<option>' + esc(c) + '</option>'; }).join("");
+}
+function resetExpenseForm(){
+  editingExpenseId = null;
+  $("expFormTitle").textContent = "Add an expense";
+  $("expSubmit").textContent = "Save expense";
+  $("expCancelEdit").hidden = true;
+  $("expErr").textContent = "";
+  $("expDate").value = todayStr();
+  $("expVendor").value = "";
+  $("expAmount").value = "";
+  $("expCategory").value = "Equipment & Supplies";
+  $("expNotes").value = "";
+  $("expReceipt").value = "";
+}
+function startEditExpense(id){
+  var e = state.expenses.filter(function(x){ return x.id === id; })[0];
+  if (!e) return;
+  editingExpenseId = id;
+  if (EXP_CATEGORIES.indexOf(e.category) < 0) {
+    var opt = document.createElement("option");
+    opt.textContent = e.category;
+    $("expCategory").appendChild(opt);
+  }
+  $("expDate").value = e.date;
+  $("expVendor").value = e.vendor;
+  $("expAmount").value = String(e.amount);
+  $("expCategory").value = e.category;
+  $("expNotes").value = e.notes;
+  $("expReceipt").value = e.receiptRef;
+  $("expFormTitle").textContent = "Edit expense";
+  $("expSubmit").textContent = "Save changes";
+  $("expCancelEdit").hidden = false;
+  $("expErr").textContent = "";
+  showTab("expenses");
+  $("expVendor").focus();
+}
+function submitExpense(ev){
+  ev.preventDefault();
+  var vals = {
+    date: $("expDate").value,
+    vendor: $("expVendor").value.trim(),
+    amountRaw: $("expAmount").value,
+    category: $("expCategory").value,
+    notes: $("expNotes").value.trim(),
+    receiptRef: $("expReceipt").value.trim()
+  };
+  var err = "";
+  if (!validDateStr(vals.date)) err = "Pick a date for this expense.";
+  else if (!vals.vendor) err = "Who did you pay? The vendor can't be blank.";
+  var amt = Number(vals.amountRaw);
+  if (!err && (vals.amountRaw === "" || !isFinite(amt))) err = "Enter the amount as a number.";
+  else if (!err && amt <= 0) err = "The amount has to be more than $0.";
+  else if (!err && amt > 999999999) err = "That amount is too big to be right — check it.";
+  if (err) { $("expErr").textContent = err; return; }
+  /* Content-keyed submit guard: the same content twice within 2s is a double-tap, not two expenses. */
+  var sigObj = Object.assign({}, vals, { editing: editingExpenseId || "" });
+  var sig = JSON.stringify(sigObj);
+  var now = Date.now();
+  if (lastSubmit.exp.sig === sig && now - lastSubmit.exp.at < 2000) return;
+  lastSubmit.exp = { sig: sig, at: now };
+  var btn = $("expSubmit");
+  btn.disabled = true;
+  if (editingExpenseId) {
+    var e = state.expenses.filter(function(x){ return x.id === editingExpenseId; })[0];
+    if (e) {
+      e.date = vals.date; e.vendor = vals.vendor; e.amount = round2(amt);
+      e.category = vals.category; e.notes = vals.notes; e.receiptRef = vals.receiptRef;
+    }
+    toast("Expense updated");
+  } else {
+    state.expenses.push({
+      id: uid("local"), date: vals.date, vendor: vals.vendor, amount: round2(amt),
+      category: vals.category, notes: vals.notes, receiptRef: vals.receiptRef, source: "local"
+    });
+    toast("Expense saved");
+  }
+  saveState();
+  resetExpenseForm();
+  renderAll();
+  btn.disabled = false;
+}
+function deleteExpense(id){
+  var e = state.expenses.filter(function(x){ return x.id === id; })[0];
+  if (!e) return;
+  if (!window.confirm("Delete this expense?\n" + e.vendor + " — " + money(e.amount) + " (" + prettyDate(e.date) + ")\nThis can't be undone.")) return;
+  state.expenses = state.expenses.filter(function(x){ return x.id !== id; });
+  tombstoneIfImported(e);
+  if (editingExpenseId === id) resetExpenseForm();
+  saveState();
+  renderAll();
+  toast("Expense deleted");
+}
+
+/* ---------- forms: income ---------- */
+function resetIncomeForm(){
+  editingIncomeId = null;
+  $("incFormTitle").textContent = "Add income";
+  $("incSubmit").textContent = "Save income";
+  $("incCancelEdit").hidden = true;
+  $("incErr").textContent = "";
+  $("incDate").value = todayStr();
+  $("incPayer").value = "";
+  $("incDesc").value = "";
+  $("incAmount").value = "";
+  $("incCategory").value = "Services";
+  $("incMethod").value = "";
+  $("incStatus").value = "Received";
+  $("incNotes").value = "";
+}
+function startEditIncome(id){
+  var e = state.income.filter(function(x){ return x.id === id; })[0];
+  if (!e) return;
+  editingIncomeId = id;
+  /* If the entry's category isn't one of the picker options (inbox entries can
+     carry any category), add it as a temporary option first — otherwise the
+     select reads "" and saving would silently erase the category. */
+  var catSel = $("incCategory");
+  var hasCat = false;
+  for (var i = 0; i < catSel.options.length; i++) if (catSel.options[i].value === e.category) hasCat = true;
+  if (!hasCat) {
+    var opt = document.createElement("option");
+    opt.textContent = e.category;
+    catSel.appendChild(opt);
+  }
+  $("incDate").value = e.date;
+  $("incPayer").value = e.payer;
+  $("incDesc").value = e.description;
+  $("incAmount").value = String(e.amount);
+  $("incCategory").value = e.category;
+  $("incMethod").value = e.paymentMethod;
+  $("incStatus").value = e.status;
+  $("incNotes").value = e.notes;
+  $("incFormTitle").textContent = "Edit income";
+  $("incSubmit").textContent = "Save changes";
+  $("incCancelEdit").hidden = false;
+  $("incErr").textContent = "";
+  showTab("income");
+  $("incPayer").focus();
+}
+function submitIncome(ev){
+  ev.preventDefault();
+  var vals = {
+    date: $("incDate").value,
+    payer: $("incPayer").value.trim(),
+    description: $("incDesc").value.trim(),
+    amountRaw: $("incAmount").value,
+    category: $("incCategory").value,
+    paymentMethod: $("incMethod").value.trim(),
+    status: $("incStatus").value,
+    notes: $("incNotes").value.trim()
+  };
+  if (!vals.category) {
+    /* Never let an empty picker value erase a category: keep the edited
+       entry's category, or the default for a new entry. */
+    var curInc = editingIncomeId ? state.income.filter(function(x){ return x.id === editingIncomeId; })[0] : null;
+    vals.category = curInc ? curInc.category : "Services";
+  }
+  var err = "";
+  if (!validDateStr(vals.date)) err = "Pick a date for this income.";
+  else if (!vals.payer) err = "Who paid you? The payer can't be blank.";
+  var amt = Number(vals.amountRaw);
+  if (!err && (vals.amountRaw === "" || !isFinite(amt))) err = "Enter the amount as a number.";
+  else if (!err && amt <= 0) err = "The amount has to be more than $0.";
+  else if (!err && amt > 999999999) err = "That amount is too big to be right — check it.";
+  if (err) { $("incErr").textContent = err; return; }
+  var sigObj = Object.assign({}, vals, { editing: editingIncomeId || "" });
+  var sig = JSON.stringify(sigObj);
+  var now = Date.now();
+  if (lastSubmit.inc.sig === sig && now - lastSubmit.inc.at < 2000) return;
+  lastSubmit.inc = { sig: sig, at: now };
+  var btn = $("incSubmit");
+  btn.disabled = true;
+  if (editingIncomeId) {
+    var e = state.income.filter(function(x){ return x.id === editingIncomeId; })[0];
+    if (e) {
+      e.date = vals.date; e.payer = vals.payer; e.description = vals.description; e.amount = round2(amt);
+      e.category = vals.category; e.paymentMethod = vals.paymentMethod; e.status = vals.status; e.notes = vals.notes;
+    }
+    toast("Income updated");
+  } else {
+    state.income.push({
+      id: uid("local"), date: vals.date, payer: vals.payer, description: vals.description, amount: round2(amt),
+      category: vals.category, paymentMethod: vals.paymentMethod, status: vals.status, notes: vals.notes, source: "local"
+    });
+    toast("Income saved");
+  }
+  saveState();
+  resetIncomeForm();
+  renderAll();
+  btn.disabled = false;
+}
+function deleteIncome(id){
+  var e = state.income.filter(function(x){ return x.id === id; })[0];
+  if (!e) return;
+  if (!window.confirm("Delete this income entry?\n" + e.payer + " — " + money(e.amount) + " (" + prettyDate(e.date) + ")\nThis can't be undone.")) return;
+  state.income = state.income.filter(function(x){ return x.id !== id; });
+  tombstoneIfImported(e);
+  if (editingIncomeId === id) resetIncomeForm();
+  saveState();
+  renderAll();
+  toast("Income deleted");
+}
+function tombstoneIfImported(entry){
+  if (!entry || entry.source !== "inbox") return;
+  var tombs = readIdList(LS_TOMBSTONES);
+  if (tombs.indexOf(entry.id) < 0) { tombs.push(entry.id); writeIdList(LS_TOMBSTONES, tombs); }
+}
+
+/* ---------- CSV export ---------- */
+function csvCell(v){
+  var s = String(v == null ? "" : v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function downloadCSV(filename, rows){
+  var text = rows.map(function(r){ return r.map(csvCell).join(","); }).join("\r\n") + "\r\n";
+  var blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 500);
+}
+function exportExpenses(){
+  var rows = [["Date","Vendor","Amount","Category","Notes","Receipt Photo Reference","Source","ID"]];
+  state.expenses.slice().sort(function(a, b){ return a.date < b.date ? -1 : 1; }).forEach(function(e){
+    rows.push([e.date, e.vendor, e.amount.toFixed(2), e.category, e.notes, e.receiptRef, e.source, e.id]);
+  });
+  downloadCSV("wolftill-expenses.csv", rows);
+  toast("Expenses CSV downloaded");
+}
+function exportIncome(){
+  var rows = [["Date","Payer","Description","Category","Gross Amount","Payment Method","Status","Notes","Source","ID"]];
+  state.income.slice().sort(function(a, b){ return a.date < b.date ? -1 : 1; }).forEach(function(e){
+    rows.push([e.date, e.payer, e.description, e.category, e.amount.toFixed(2), e.paymentMethod, e.status, e.notes, e.source, e.id]);
+  });
+  downloadCSV("wolftill-income.csv", rows);
+  toast("Income CSV downloaded");
+}
+
+/* ---------- voice entry (one-press, §9a) ---------- */
+var activeRec = null;
+function wireMic(btn){
+  btn.addEventListener("click", function(){
+    var targetId = btn.getAttribute("data-mic");
+    var field = $(targetId);
+    if (!field) return;
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast("Voice isn't available on this device/browser — typing works as always"); return; }
+    if (activeRec) { try { activeRec.stop(); } catch (e) {} activeRec = null; }
+    var rec;
+    try { rec = new SR(); } catch (e) { toast("Voice isn't available on this device/browser — typing works as always"); return; }
+    activeRec = rec;
+    rec.lang = "en-US";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    btn.classList.add("listening");
+    rec.onresult = function(ev){
+      var text = "";
+      try { text = ev.results[0][0].transcript || ""; } catch (e) {}
+      btn.classList.remove("listening");
+      activeRec = null;
+      if (!text) { toast("Didn't catch that — try again or type it"); return; }
+      if (field.tagName === "TEXTAREA" || field.type === "text") {
+        field.value = field.value ? field.value + " " + text : text;
+      } else {
+        var num = text.replace(/[^0-9.]/g, "");
+        field.value = num || text;
+      }
+      field.focus();
+    };
+    rec.onerror = function(){
+      btn.classList.remove("listening");
+      activeRec = null;
+      toast("Didn't catch that — try again or type it");
+    };
+    rec.onend = function(){ btn.classList.remove("listening"); if (activeRec === rec) activeRec = null; };
+    try { rec.start(); } catch (e) {
+      btn.classList.remove("listening");
+      activeRec = null;
+      toast("Voice isn't available on this device/browser — typing works as always");
+    }
+  });
+}
+
+/* ---------- zero-tap inbox ---------- */
+var inboxRunning = false;
+function importInbox(){
+  if (inboxRunning) return;
+  inboxRunning = true;
+  fetch("money/inbox.json", { cache: "no-store" })
+    .then(function(resp){ if (!resp.ok) throw new Error("no inbox"); return resp.json(); })
+    .then(function(data){
+      inboxRunning = false;
+      var statusEl = $("inboxStatus");
+      if (!data || typeof data !== "object") { if (statusEl) statusEl.textContent = "Receipt inbox: couldn't be read — your saved entries are untouched."; return; }
+      var tombs = readIdList(LS_TOMBSTONES);
+      var imported = readIdList(LS_IMPORTED);
+      var importedChanged = false;
+      var added = 0;
+      function consider(raw, sanitize, list){
+        if (!raw || typeof raw !== "object" || typeof raw.id !== "string" || !raw.id) return;
+        if (tombs.indexOf(raw.id) >= 0) return;
+        if (list.some(function(x){ return x.id === raw.id; })) {
+          if (imported.indexOf(raw.id) < 0) { imported.push(raw.id); importedChanged = true; }
+          return;
+        }
+        var clean = sanitize(Object.assign({}, raw, { source: "inbox" }));
+        if (!clean) return;
+        list.push(clean);
+        if (imported.indexOf(clean.id) < 0) { imported.push(clean.id); importedChanged = true; }
+        added++;
+      }
+      if (Array.isArray(data.expenses)) data.expenses.forEach(function(r){ consider(r, sanitizeExpense, state.expenses); });
+      if (Array.isArray(data.income)) data.income.forEach(function(r){ consider(r, sanitizeIncome, state.income); });
+      if (importedChanged) writeIdList(LS_IMPORTED, imported);
+      if (statusEl) statusEl.textContent = "Receipt inbox: up to date — new entries from Muse land here on their own.";
+      if (added > 0) {
+        saveState();
+        renderAll();
+        toast(added === 1 ? "1 new entry arrived from Muse" : added + " new entries arrived from Muse");
+      }
+    })
+    .catch(function(){
+      inboxRunning = false;
+      var statusEl = $("inboxStatus");
+      if (statusEl) statusEl.textContent = "Receipt inbox: not reachable right now — your saved entries are untouched.";
+      /* silent otherwise: offline / file:// / inbox not published yet */
+    });
+}
+
+/* ---------- terms gate ---------- */
+function initGate(){
+  var agreed = null;
+  try { agreed = localStorage.getItem(LS_AGREED); } catch (e) {}
+  if (agreed === TERMS_VERSION) { $("gate").hidden = true; return; }
+  $("gate").hidden = false;
+  $("gateCheck").addEventListener("change", function(){ $("gateAgree").disabled = !this.checked; });
+  $("gateAgree").addEventListener("click", function(){
+    try { localStorage.setItem(LS_AGREED, TERMS_VERSION); } catch (e) {}
+    $("gate").hidden = true;
+  });
+}
+
+/* ---------- init ---------- */
+function init(){
+  loadState();
+  fillCategorySelect();
+  resetExpenseForm();
+  resetIncomeForm();
+  var bar = $("tabBar");
+  bar.addEventListener("click", function(ev){
+    var b = ev.target.closest ? ev.target.closest("button[data-tab]") : null;
+    if (b) showTab(b.getAttribute("data-tab"));
+  });
+  document.addEventListener("click", function(ev){
+    var t = ev.target;
+    if (!t || !t.getAttribute) return;
+    var editExp = t.getAttribute("data-edit-exp");
+    var delExp = t.getAttribute("data-del-exp");
+    var editInc = t.getAttribute("data-edit-inc");
+    var delInc = t.getAttribute("data-del-inc");
+    if (editExp) startEditExpense(editExp);
+    else if (delExp) deleteExpense(delExp);
+    else if (editInc) startEditIncome(editInc);
+    else if (delInc) deleteIncome(delInc);
+  });
+  $("expForm").addEventListener("submit", submitExpense);
+  $("incForm").addEventListener("submit", submitIncome);
+  $("expCancelEdit").addEventListener("click", resetExpenseForm);
+  $("incCancelEdit").addEventListener("click", resetIncomeForm);
+  $("totYear").addEventListener("change", renderTotals);
+  $("exportExp").addEventListener("click", exportExpenses);
+  $("exportInc").addEventListener("click", exportIncome);
+  $("homeAddExpense").addEventListener("click", function(){ showTab("expenses"); });
+  $("homeAddIncome").addEventListener("click", function(){ showTab("income"); });
+  var mics = document.querySelectorAll(".micbtn");
+  for (var i = 0; i < mics.length; i++) wireMic(mics[i]);
+  initGate();
+  renderAll();
+  importInbox();
+  document.addEventListener("visibilitychange", function(){ if (!document.hidden) importInbox(); });
+  window.addEventListener("storage", function(ev){
+    if (ev.key === LS_STATE) {
+      /* Another tab changed the books — reload from the single stored copy and re-render. */
+      loadState();
+      renderAll();
+    }
+  });
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
